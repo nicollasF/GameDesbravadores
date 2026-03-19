@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<title>Jogo dos Desbravadores</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #0f172a;
+  color: #f1f5f9;
+  text-align: center;
+}
+
+h2 { color: #facc15; }
+
+.container {
+  display: none;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 40px;
+  margin-top: 20px;
+}
+
+.organograma {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.box {
+  border: 2px solid #facc15;
+  width: 260px;
+  padding: 8px;
+  margin: 5px;
+  background: #1e293b;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.drag {
+  background: #334155;
+  padding: 6px;
+  margin: 4px;
+  border-radius: 6px;
+  cursor: grab;
+}
+
+.linha {
+  width: 2px;
+  height: 12px;
+  background: #facc15;
+}
+
+.vida-box {
+  border: 2px solid #facc15;
+  display: inline-block;
+  padding: 6px 12px;
+  margin-bottom: 10px;
+}
+
+.correct { background: #166534; }
+.wrong { background: #7f1d1d; }
+
+button {
+  margin: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #facc15;
+  border: none;
+  font-weight: bold;
+}
+
+.footer {
+  margin-top: 20px;
+  font-size: 11px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    align-items: center;
+  }
+  .box {
+    width: 90%;
+  }
+  #nomes{width: 100%;}
+  button{width: 90%;}
+}
+</style>
+</head>
+
+<body>
+
+<h2>🎮 Jogo dos Desbravadores - Descubra os Cargos</h2>
+
+<div id="start">
+  <p>Digite seu nome:</p>
+  <input id="nomeJogador">
+  <br><br>
+  <button onclick="iniciarJogo()">Iniciar</button>
+</div>
+
+<div id="jogo" style="display:none">
+
+<div class="vida-box">VIDAS: <span id="vida">❤️</span></div>
+
+<div id="quiz">
+  <p id="pergunta"></p>
+
+  <button onclick="responder('geral_presidente')">Presidente Associação Geral</button>
+  <button onclick="responder('geral_mda')">Jovens e MDA Associação Geral</button>
+  <button onclick="responder('divisao_presidente')">Presidente Divisão</button>
+  <button onclick="responder('divisao_mda')">MDA Divisão</button>
+  <button onclick="responder('uniao_presidente')">Presidente União</button>
+  <button onclick="responder('uniao_mda')">MDA União</button>
+  <button onclick="responder('associacao_presidente')">Presidente Associação</button>
+  <button onclick="responder('associacao_mda')">MDA Associação</button>
+  <button onclick="responder('regional')">Regional</button>
+  <button onclick="responder('distrital')">Distrital</button>
+  <button onclick="responder('diretor')">Diretor</button>
+</div>
+
+<div id="inputs"></div>
+
+<div class="container" id="container">
+  <div id="organograma" class="organograma"></div>
+  <div id="nomes"></div>
+</div>
+
+</div>
+
+<div id="final"></div>
+
+<div class="footer">
+Desenvolvido por Nicollas Oliveira - Aspirante a Líder Master
+</div>
+
+<script>
+
+// CONFIG
+let jogador = "";
+let vidaInfinita = false;
+let mostrouMensagem = false;
+
+let nomesDigitados = {
+  regional: "",
+  distrital: "",
+  diretor: ""
+};
+
+// NORMALIZAÇÃO
+function normalizar(txt) {
+  return txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+}
+
+// LEVENSHTEIN
+function similaridade(a, b) {
+  a = normalizar(a);
+  b = normalizar(b);
+
+  const matriz = [];
+  for (let i = 0; i <= b.length; i++) matriz[i] = [i];
+  for (let j = 0; j <= a.length; j++) matriz[0][j] = j;
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      matriz[i][j] = b[i - 1] === a[j - 1]
+        ? matriz[i - 1][j - 1]
+        : Math.min(
+            matriz[i - 1][j - 1] + 1,
+            matriz[i][j - 1] + 1,
+            matriz[i - 1][j] + 1
+          );
+    }
+  }
+
+  const distancia = matriz[b.length][a.length];
+  return 1 - distancia / Math.max(a.length, b.length);
+}
+
+function validarNome(a, b) {
+  return similaridade(a, b) >= 0.75;
+}
+
+// INICIO
+function iniciarJogo() {
+  jogador = document.getElementById("nomeJogador").value.trim();
+  if (!jogador) return alert("Digite seu nome!");
+
+  document.getElementById("start").style.display = "none";
+  document.getElementById("jogo").style.display = "block";
+}
+
+// PERGUNTAS
+let perguntas = [
+{ texto:"Coordeno toda a igreja mundial.", resposta:"geral_presidente", nome:"Erton Kohler"},
+{ texto:"Coordeno jovens e desbravadores no mundo.", resposta:"geral_mda", nome:"Busi Khumalo"},
+{ texto:"Lidero a igreja na América do Sul.", resposta:"divisao_presidente", nome:"Stanley Arco"},
+{ texto:"Cuido dos desbravadores em vários países da América do Sul.", resposta:"divisao_mda", nome:"Jefferson Silva"},
+{ texto:"Minha sede fica em Engenheiro Coelho e cuido de varios departamentos.", resposta:"uniao_presidente", nome:"Mauricio Lima"},
+{ texto:"Coordeno o MDA na União.", resposta:"uniao_mda", nome:"Cesar Nascimento"},
+{ texto:"Lidero a igreja a nível Associação Local.", resposta:"associacao_presidente", nome:"Samuel Bento"},
+{ texto:"Auxilio clubes e eventos como Campori, CTAD, CTBD e outros.", resposta:"associacao_mda", nome:"Danny Bravo"},
+{ texto:"Acompanho clubes na região.", resposta:"regional", input:true},
+{ texto:"Dou suporte no distrito.", resposta:"distrital", input:true},
+{ texto:"Lidero o clube local.", resposta:"diretor", input:true}
+];
+
+perguntas.sort(()=>Math.random()-0.5);
+
+let atual=0;
+let totalRespondidas=0;
+
+// QUIZ
+function mostrarPergunta(){
+  if(atual<perguntas.length){
+    document.getElementById("pergunta").innerText=perguntas[atual].texto;
+  } else {
+    document.getElementById("quiz").style.display="none";
+  }
+}
+
+function responder(resp){
+  let p=perguntas[atual];
+
+  if(resp===p.resposta){
+    totalRespondidas++;
+
+    if(p.nome) adicionarNome(p.nome);
+    if(p.input) criarInput(p.resposta);
+
+    atual++;
+    mostrarPergunta();
+  } else {
+    perderVida();
+  }
+}
+
+// VIDA
+function perderVida(){
+  if(!mostrouMensagem){
+    mostrouMensagem=true;
+    alert("✝️ Jesus morreu por você.\nE você tem vida eterna.");
+    vidaInfinita=true;
+    document.getElementById("vida").innerText="♾️✝️";
+  }
+}
+
+// INPUT
+function criarInput(tipo){
+  let div=document.createElement("div");
+  div.id="box_"+tipo;
+
+  div.innerHTML=`
+    <p>Digite o nome do ${tipo}:</p>
+    <input id="${tipo}_input">
+    <button onclick="confirmarNome('${tipo}')">OK</button>
+  `;
+
+  document.getElementById("inputs").appendChild(div);
+}
+
+function confirmarNome(tipo){
+  let valor=document.getElementById(tipo+"_input").value.trim();
+  if(!valor) return;
+
+  nomesDigitados[tipo]=valor;
+  adicionarNome(valor);
+
+  document.getElementById("box_"+tipo).remove();
+  verificarFinal();
+}
+
+// NOMES
+function adicionarNome(nome){
+  let div=document.createElement("div");
+  div.className="drag";
+  div.draggable=true;
+  div.id=nome;
+  div.innerText=nome;
+  div.ondragstart=drag;
+  document.getElementById("nomes").appendChild(div);
+}
+
+// FINAL
+function verificarFinal(){
+  let rest=
+    document.getElementById("box_regional")||
+    document.getElementById("box_distrital")||
+    document.getElementById("box_diretor");
+
+  if(rest||totalRespondidas<perguntas.length) return;
+
+  montarOrganograma();
+}
+
+function montarOrganograma(){
+  document.getElementById("container").style.display="flex";
+
+  let org=document.getElementById("organograma");
+
+  org.innerHTML=`
+  ${criarBox("Presidente Associação Geral","Erton Kohler")}
+  ${linha()}
+  ${criarBox("AMDA Associação Geral","Busi Khu malo")}
+  ${linha()}
+  ${criarBox("Presidente Divisão Sul Americana","Stanley Arco")}
+  ${linha()}
+  ${criarBox("MDA Divisão Sul Americana","Jefferson Silva")}
+  ${linha()}
+  ${criarBox("Presidente União Central Brasilileira","Mauricio Lima")}
+  ${linha()}
+  ${criarBox("MDA União Central Brasilileira","Cesar Nascimento")}
+  ${linha()}
+  ${criarBox("Presidente Associação Paulistana","Samuel Bento")}
+  ${linha()}
+  ${criarBox("MDA Associação Paulistana","Danny Bravo")}
+  ${linha()}
+  ${criarBox("Regional",nomesDigitados.regional)}
+  ${linha()}
+  ${criarBox("Distrital",nomesDigitados.distrital)}
+  ${linha()}
+  ${criarBox("Diretor",nomesDigitados.diretor)}
+  `;
+
+  ativarDragDrop();
+}
+
+// DRAG
+function criarBox(cargo,correto){
+  return `<div class="box" data-correct="${correto}">
+  <span>${cargo}</span>
+  <span class="nome"></span>
+  </div>`;
+}
+
+function linha(){return `<div class="linha"></div>`;}
+
+function drag(ev){
+  ev.dataTransfer.setData("text",ev.target.id);
+}
+
+function ativarDragDrop(){
+  document.querySelectorAll(".box").forEach(box=>{
+
+    box.addEventListener("dragover",ev=>ev.preventDefault());
+
+    box.addEventListener("drop",function(ev){
+      ev.preventDefault();
+
+      if(this.classList.contains("correct")) return;
+
+      let data=ev.dataTransfer.getData("text");
+      let correto=validarNome(data,this.dataset.correct);
+
+      this.classList.remove("wrong","correct");
+
+      if(correto){
+        this.classList.add("correct");
+        this.querySelector(".nome").innerText=data;
+        document.getElementById(data)?.remove();
+        verificarConclusaoFinal();
+      } else {
+        this.classList.add("wrong");
+        perderVida();
+      }
+    });
+  });
+}
+
+function verificarConclusaoFinal(){
+  let incompleto=[...document.querySelectorAll(".box")]
+  .some(b=>b.querySelector(".nome").innerText==="");
+
+  if(!incompleto){
+    document.getElementById("final").innerHTML=`
+    <h3>🎉 Parabéns, ${jogador}!</h3>
+    <p>Você concluiu o requisito com sucesso.</p>
+    <p>Tire um print ou imprima o organograma.</p>`;
+  }
+}
+
+mostrarPergunta();
+
+</script>
+
+</body>
+</html>
