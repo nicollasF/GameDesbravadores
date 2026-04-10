@@ -150,6 +150,71 @@ button {
   font-size: 11px;
 }
 
+/* ── TUTORIAL ─────────────────────────────────────── */
+#tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+}
+
+#tutorial-box {
+  background: #1e293b;
+  border: 2px solid #facc15;
+  border-radius: 14px;
+  padding: 24px 20px;
+  max-width: 380px;
+  width: 100%;
+  text-align: left;
+}
+
+#tutorial-box h3 {
+  color: #facc15;
+  text-align: center;
+  margin-top: 0;
+  font-size: 18px;
+}
+
+.tutorial-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 14px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tutorial-step .icone {
+  font-size: 22px;
+  flex-shrink: 0;
+  width: 30px;
+  text-align: center;
+}
+
+.tutorial-sep {
+  border: none;
+  border-top: 1px solid #334155;
+  margin: 16px 0;
+}
+
+#btn-entendi {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  font-size: 15px;
+  border-radius: 8px;
+  background: #facc15;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 6px;
+}
+/* ─────────────────────────────────────────────────── */
+
 @media (max-width: 768px) {
   .container {
     flex-direction: column;
@@ -167,6 +232,42 @@ button {
 </head>
 
 <body>
+
+<!-- TUTORIAL MODAL -->
+<div id="tutorial-overlay">
+  <div id="tutorial-box">
+    <h3>📖 Como Jogar</h3>
+
+    <div class="tutorial-step">
+      <span class="icone">1️⃣</span>
+      <span><strong>Fase 1 — Quiz:</strong> Leia a dica e toque no cargo que melhor descreve a pessoa. Acertou? O jogo avança. Errou? Você receberá uma mensagem especial. 😄</span>
+    </div>
+
+    <div class="tutorial-step">
+      <span class="icone">✍️</span>
+      <span><strong>Nomes locais:</strong> Para Regional, Distrital e Diretor, <em>você mesmo digita</em> o nome da pessoa responsável na sua região.</span>
+    </div>
+
+    <hr class="tutorial-sep">
+
+    <div class="tutorial-step">
+      <span class="icone">2️⃣</span>
+      <span><strong>Fase 2 — Organograma:</strong> Após o quiz, os nomes aparecem como cards. Toque em um nome para <strong>selecioná-lo</strong> (fica azul).</span>
+    </div>
+
+    <div class="tutorial-step">
+      <span class="icone">👆</span>
+      <span>Depois toque no <strong>cargo correto</strong> no organograma para encaixar. Verde = acerto ✅ &nbsp; Vermelho = erro ❌</span>
+    </div>
+
+    <div class="tutorial-step">
+      <span class="icone">🏆</span>
+      <span>Encaixe todos os nomes corretamente para <strong>concluir o requisito!</strong></span>
+    </div>
+
+    <button id="btn-entendi" onclick="fecharTutorial()">Entendi, vamos jogar! 🚀</button>
+  </div>
+</div>
 
 <h2>🎮 Jogo dos Desbravadores - Descubra os Cargos</h2>
 
@@ -221,7 +322,20 @@ Desenvolvido por Nicollas Oliveira - Aspirante a Líder Master
 let jogador = "";
 let vidaInfinita = false;
 let mostrouMensagem = false;
-let nomeSelecionado = null; // guarda o card selecionado atualmente
+let nomeSelecionado = null;
+
+function fecharTutorial() {
+  document.getElementById("tutorial-overlay").style.display = "none";
+}
+
+// Botão de ajuda flutuante
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.createElement("button");
+  btn.innerText = "❓ Ajuda";
+  btn.style.cssText = "position:fixed;bottom:16px;right:16px;z-index:998;background:#facc15;border:none;border-radius:20px;padding:8px 14px;font-weight:bold;cursor:pointer;font-size:13px;box-shadow:0 2px 8px #0008;";
+  btn.onclick = () => document.getElementById("tutorial-overlay").style.display = "flex";
+  document.body.appendChild(btn);
+});
 
 let nomesDigitados = {
   regional: "",
@@ -267,7 +381,7 @@ function iniciarJogo() {
 // PERGUNTAS
 let perguntas = [
   { texto:"Coordeno toda a igreja mundial.", resposta:"geral_presidente", nome:"Erton Kohler"},
-  { texto:"Coordeno desbravadores e aventureiros no mundo.", resposta:"geral_mda", nome:"Alfred Kwasi Asiem"},
+  { texto:"Coordeno jovens e desbravadores no mundo.", resposta:"geral_mda", nome:"Alfred Kwasi Asiem"},
   { texto:"Lidero a igreja na América do Sul.", resposta:"divisao_presidente", nome:"Stanley Arco"},
   { texto:"Cuido dos desbravadores em vários países da América do Sul.", resposta:"divisao_mda", nome:"Jefferson Silva"},
   { texto:"Minha sede fica em Engenheiro Coelho e cuido de varios departamentos.", resposta:"uniao_presidente", nome:"Mauricio Lima"},
@@ -419,7 +533,7 @@ function montarOrganograma() {
   org.innerHTML = `
     ${criarBox("Presidente Associação Geral","Erton Kohler")}
     ${linha()}
-    ${criarBox("MDA Associação Geral","Alfred Kwasi Asiem")}
+    ${criarBox("MDA Associação Geral","Busi Khu malo")}
     ${linha()}
     ${criarBox("Presidente Divisão Sul Americana","Stanley Arco")}
     ${linha()}
