@@ -150,7 +150,51 @@ button {
   font-size: 11px;
 }
 
-/* ── TUTORIAL ─────────────────────────────────────── */
+/* ── MODAL RESPIRA ────────────────────────────────── */
+#calma-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 998;
+  padding: 16px;
+}
+
+#calma-box {
+  background: #1e293b;
+  border: 2px solid #fb923c;
+  border-radius: 14px;
+  padding: 28px 22px;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+}
+
+#calma-box h3 {
+  color: #fb923c;
+  margin-top: 0;
+  font-size: 22px;
+}
+
+#calma-box p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+
+#btn-calma {
+  margin-top: 10px;
+  padding: 10px 24px;
+  background: #fb923c;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+}
+/* ─────────────────────────────────────────────────── */
 #tutorial-overlay {
   position: fixed;
   inset: 0;
@@ -233,6 +277,16 @@ button {
 
 <body>
 
+<!-- MODAL RESPIRA -->
+<div id="calma-overlay">
+  <div id="calma-box">
+    <h3>🌬️ Respira!</h3>
+    <p>Parece que está um pouco difícil agora.<br><br>
+    Não precisa chutar — <strong>leia a dica com calma</strong>, pense no que cada cargo faz e tente de novo. Você consegue! 💪</p>
+    <button id="btn-calma" onclick="fecharCalma()">Tô pronto, vou tentar de novo!</button>
+  </div>
+</div>
+
 <!-- TUTORIAL MODAL -->
 <div id="tutorial-overlay">
   <div id="tutorial-box">
@@ -285,17 +339,17 @@ button {
 <div id="quiz">
   <p id="pergunta"></p>
 
-  <button onclick="responder('geral_presidente')">Presidente Associação Geral</button>
-  <button onclick="responder('geral_mda')">Jovens e MDA Associação Geral</button>
-  <button onclick="responder('divisao_presidente')">Presidente Divisão</button>
-  <button onclick="responder('divisao_mda')">MDA Divisão</button>
-  <button onclick="responder('uniao_presidente')">Presidente União</button>
-  <button onclick="responder('uniao_mda')">MDA União</button>
-  <button onclick="responder('associacao_presidente')">Presidente Associação</button>
-  <button onclick="responder('associacao_mda')">MDA Associação</button>
-  <button onclick="responder('regional')">Regional</button>
-  <button onclick="responder('distrital')">Distrital</button>
-  <button onclick="responder('diretor')">Diretor</button>
+  <button data-key="geral_presidente" onclick="responder('geral_presidente')">Presidente Associação Geral</button>
+  <button data-key="geral_mda" onclick="responder('geral_mda')">Jovens e MDA Associação Geral</button>
+  <button data-key="divisao_presidente" onclick="responder('divisao_presidente')">Presidente Divisão</button>
+  <button data-key="divisao_mda" onclick="responder('divisao_mda')">MDA Divisão</button>
+  <button data-key="uniao_presidente" onclick="responder('uniao_presidente')">Presidente União</button>
+  <button data-key="uniao_mda" onclick="responder('uniao_mda')">MDA União</button>
+  <button data-key="associacao_presidente" onclick="responder('associacao_presidente')">Presidente Associação</button>
+  <button data-key="associacao_mda" onclick="responder('associacao_mda')">MDA Associação</button>
+  <button data-key="regional" onclick="responder('regional')">Regional</button>
+  <button data-key="distrital" onclick="responder('distrital')">Distrital</button>
+  <button data-key="diretor" onclick="responder('diretor')">Diretor</button>
 </div>
 
 <div id="inputs"></div>
@@ -323,6 +377,13 @@ let jogador = "";
 let vidaInfinita = false;
 let mostrouMensagem = false;
 let nomeSelecionado = null;
+let errosConsecutivos = 0;
+const LIMITE_CHUTE = 3;
+
+function fecharCalma() {
+  document.getElementById("calma-overlay").style.display = "none";
+  errosConsecutivos = 0;
+}
 
 function fecharTutorial() {
   document.getElementById("tutorial-overlay").style.display = "none";
@@ -410,13 +471,27 @@ function mostrarPergunta() {
 function responder(resp) {
   let p = perguntas[atual];
   if (resp === p.resposta) {
+    errosConsecutivos = 0;
+    // Esconde o botão da opção recém-acertada
+    const btn = document.querySelector(`button[data-key="${resp}"]`);
+    if (btn) btn.style.display = "none";
+
     totalRespondidas++;
     if (p.nome) adicionarNomeCard(p.nome);
-    if (p.input) criarInput(p.resposta);
-    atual++;
-    mostrarPergunta();
-    verificarFinal(); // ← corrige o bug do embaralhamento
+    if (p.input) {
+      document.getElementById("quiz").style.visibility = "hidden";
+      criarInput(p.resposta);
+    } else {
+      atual++;
+      mostrarPergunta();
+      verificarFinal();
+    }
   } else {
+    errosConsecutivos++;
+    if (errosConsecutivos >= LIMITE_CHUTE) {
+      errosConsecutivos = 0;
+      document.getElementById("calma-overlay").style.display = "flex";
+    }
     perderVida();
   }
 }
@@ -449,6 +524,10 @@ function confirmarNome(tipo) {
   nomesDigitados[tipo] = valor;
   adicionarNomeCard(valor);
   document.getElementById("box_" + tipo).remove();
+  // Agora avança a pergunta
+  atual++;
+  document.getElementById("quiz").style.visibility = "visible";
+  mostrarPergunta();
   verificarFinal();
 }
 
